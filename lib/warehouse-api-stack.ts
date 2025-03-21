@@ -4,6 +4,8 @@ import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import { Construct } from "constructs";
 import { inventoryData } from "../seed/inventory";
 import * as custom from "aws-cdk-lib/custom-resources";
+import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as lambdanode from "aws-cdk-lib/aws-lambda-nodejs";
 
 export class WarehouseAPIStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -24,7 +26,7 @@ export class WarehouseAPIStack extends cdk.Stack {
       deployOptions: { stageName: "dev" },
     });
 
-    // **自动填充 DynamoDB 数据**
+    // 自动填充 DynamoDB 数据
     new custom.AwsCustomResource(this, "SeedInventoryData", {
         onCreate: {
           service: "DynamoDB",
@@ -40,6 +42,26 @@ export class WarehouseAPIStack extends cdk.Stack {
         },
         policy: custom.AwsCustomResourcePolicy.fromSdkCalls({ resources: [warehouseTable.tableArn] }),
     });
+
+    // Function 创建 Lambda 函数（查询库存）
+    const getInventoryFn = new lambdanode.NodejsFunction(
+        this, "GetInventoryFn", {
+        runtime: lambda.Runtime.NODEJS_18_X,
+        entry: `${__dirname}/../lambdas/getInventory.ts`,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 128,
+        environment: {
+          TABLE_NAME: warehouseTable.tableName,
+          REGION:'eu-west-1'
+        },
+      });
+  
+      // Permission
+      warehouseTable.grantReadData(getInventoryFn);
+  
+      // 创建 API 端点
+      const inventoryEndpoint = api.root.addResource("inventory");
+      inventoryEndpoint.addMethod("GET", new apigateway.LambdaIntegration(getInventoryFn));
 
     
 
