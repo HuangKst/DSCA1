@@ -20,8 +20,9 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     return {
       statusCode: 200,
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ items: result.Items || [] }), 
+      body: JSON.stringify({ items }), 
     };
+    
   } catch (error) {
     console.error("Error fetching inventory:", error);
 
