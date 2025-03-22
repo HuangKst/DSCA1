@@ -81,7 +81,7 @@ Only clients with a valid API key can create new inventory items.
 📌 **CDK Snippet**:
 
 ```
-ts复制编辑const apiKey = api.addApiKey("WarehouseApiKey", {
+const apiKey = api.addApiKey("WarehouseApiKey", {
   apiKeyName: "warehouse-api-key",
 });
 
@@ -185,10 +185,12 @@ cdk destroy
 ├── lib/
 │   └── warehouse-api-stack.ts       # CDK stack
 ├── lambdas/
-│   ├── getInventory.ts
-│   ├── createInventoryItem.ts
-│   ├── updateInventoryItem.ts
-│   └── deleteInventoryItem.ts
+│   ├── getInventory.ts              # GET all items
+│   ├── getInventoryByWarehouse.ts   # GET items by warehouse ID 
+│   ├── getInventoryByItem.ts        # GET items by item and warehouse ID
+│   ├── createInventoryItem.ts       # POST 
+│   ├── updateInventoryItem.ts       # PUT 
+│   └── deleteInventoryItem.ts       # DELETE 
 ├── shared/
 │   ├── types.d.ts                   # TypeScript types
 │   ├── types.schema.json            # Auto-generated schema (gitignored)
