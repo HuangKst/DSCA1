@@ -30,7 +30,7 @@ export class WarehouseAPIStack extends cdk.Stack {
                 allowMethods: ["OPTIONS", "GET", "POST", "PUT", "PATCH", "DELETE"],
                 allowCredentials: true,
                 allowOrigins: ["*"],
-              },
+            },
         });
 
         // 自动填充 DynamoDB 数据
@@ -54,7 +54,7 @@ export class WarehouseAPIStack extends cdk.Stack {
             this, "GetInventoryFn", {
             architecture: lambda.Architecture.X86_64,
             runtime: lambda.Runtime.NODEJS_18_X,
-            entry: `${__dirname}/../lambdas/getInventory.ts`, 
+            entry: `${__dirname}/../lambdas/getInventory.ts`,
             timeout: cdk.Duration.seconds(10),
             memorySize: 128,
             environment: {
@@ -62,17 +62,51 @@ export class WarehouseAPIStack extends cdk.Stack {
                 REGION: 'eu-west-1'
             },
             bundling: {
-                forceDockerBundling: false, 
-              },
-              
+                forceDockerBundling: false,
+            },
+
         });
+
+        const getInventoryByWarehouseFn = new lambdanode.NodejsFunction(
+            this,
+            "GetInventoryByWarehouseFn",
+            {
+              runtime: lambda.Runtime.NODEJS_18_X,
+              entry: `${__dirname}/../lambdas/getInventoryByWarehouse.ts`,
+              handler: "handler",
+              memorySize: 128,
+              timeout: cdk.Duration.seconds(10),
+              environment: {
+                TABLE_NAME: warehouseTable.tableName,
+              },
+              bundling: {
+                forceDockerBundling: false,
+              },
+            }
+          );
+
+
+        
+
+        // 创建 API 端点
+        //GET ALL inventory
+        const inventoryEndpoint = api.root.addResource("inventory");
+        inventoryEndpoint.addMethod(
+            "GET",
+            new apigateway.LambdaIntegration(getInventoryFn)
+        );
+
+        //Sort items by warehouse id 
+        const inventoryByWarehouse = inventoryEndpoint.addResource("warehouse").addResource("{warehouseId}");
+        inventoryByWarehouse.addMethod(
+            "GET",
+            new apigateway.LambdaIntegration(getInventoryByWarehouseFn)
+        );
 
         // Permission
         warehouseTable.grantReadData(getInventoryFn);
+        warehouseTable.grantReadData(getInventoryByWarehouseFn);
 
-        // 创建 API 端点
-        const inventoryEndpoint = api.root.addResource("inventory");
-        inventoryEndpoint.addMethod("GET", new apigateway.LambdaIntegration(getInventoryFn));
 
 
 
