@@ -48,6 +48,26 @@ export class WarehouseAPIStack extends cdk.Stack {
             policy: custom.AwsCustomResourcePolicy.fromSdkCalls({ resources: [warehouseTable.tableArn] }),
         });
 
+        // 创建 API Key
+        const apiKey = api.addApiKey("WarehouseApiKey", {
+            apiKeyName: "warehouse-api-key",
+            description: "API Key for creating inventory items",
+        });
+
+        // 创建使用计划并关联 Key
+        const plan = api.addUsagePlan("WarehouseUsagePlan", {
+            name: "WarehousePlan",
+            throttle: {
+                rateLimit: 10,
+                burstLimit: 2,
+            },
+        });
+        plan.addApiKey(apiKey);
+        plan.addApiStage({
+            stage: api.deploymentStage,
+        });
+
+
 
         // Function 创建 Lambda 函数（查询库存）
         const getInventoryFn = new lambdanode.NodejsFunction(
@@ -96,9 +116,20 @@ export class WarehouseAPIStack extends cdk.Stack {
             bundling: { forceDockerBundling: false },
         });
 
+        const createInventoryItemFn = new lambdanode.NodejsFunction(this, "CreateInventoryItemFn", {
+            runtime: lambda.Runtime.NODEJS_18_X,
+            entry: `${__dirname}/../lambdas/createInventoryItem.ts`,
+            handler: "handler",
+            environment: {
+                TABLE_NAME: warehouseTable.tableName,
+                REGION: "eu-west-1",
+            },
+            bundling: {
+                forceDockerBundling: false,
+            },
+        });
 
-
-
+    
 
 
 
@@ -118,17 +149,27 @@ export class WarehouseAPIStack extends cdk.Stack {
         );
 
         //Select the item by item id and warehouse id 
-        const inventoryByItem = inventoryByWarehouse.addResource("item").addResource("{itemId}"); 
+        const inventoryByItem = inventoryByWarehouse.addResource("item").addResource("{itemId}");
         inventoryByItem.addMethod(
             "GET",
             new apigateway.LambdaIntegration(getInventoryByItemFn)
         );
 
-
+        //Add item to warehouse 
+        inventoryEndpoint.addMethod(
+            "POST",
+            new apigateway.LambdaIntegration(createInventoryItemFn),
+            {
+              apiKeyRequired: true, 
+            }
+          );
+          
+          
         // Permission
         warehouseTable.grantReadData(getInventoryFn);
         warehouseTable.grantReadData(getInventoryByWarehouseFn);
         warehouseTable.grantReadData(getInventoryByItemFn);
+        warehouseTable.grantWriteData(createInventoryItemFn);
 
 
 
