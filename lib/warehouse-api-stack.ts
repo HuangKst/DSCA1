@@ -71,22 +71,36 @@ export class WarehouseAPIStack extends cdk.Stack {
             this,
             "GetInventoryByWarehouseFn",
             {
-              runtime: lambda.Runtime.NODEJS_18_X,
-              entry: `${__dirname}/../lambdas/getInventoryByWarehouse.ts`,
-              handler: "handler",
-              memorySize: 128,
-              timeout: cdk.Duration.seconds(10),
-              environment: {
-                TABLE_NAME: warehouseTable.tableName,
-              },
-              bundling: {
-                forceDockerBundling: false,
-              },
+                runtime: lambda.Runtime.NODEJS_18_X,
+                entry: `${__dirname}/../lambdas/getInventoryByWarehouse.ts`,
+                handler: "handler",
+                memorySize: 128,
+                timeout: cdk.Duration.seconds(10),
+                environment: {
+                    TABLE_NAME: warehouseTable.tableName,
+                },
+                bundling: {
+                    forceDockerBundling: false,
+                },
             }
-          );
+        );
+
+        const getInventoryByItemFn = new lambdanode.NodejsFunction(this, "GetInventoryByItemFn", {
+            runtime: lambda.Runtime.NODEJS_18_X,
+            entry: `${__dirname}/../lambdas/getInventoryByItem.ts`,
+            handler: "handler",
+            environment: {
+                TABLE_NAME: warehouseTable.tableName,
+                REGION: "eu-west-1",
+            },
+            bundling: { forceDockerBundling: false },
+        });
 
 
-        
+
+
+
+
 
         // 创建 API 端点
         //GET ALL inventory
@@ -103,10 +117,18 @@ export class WarehouseAPIStack extends cdk.Stack {
             new apigateway.LambdaIntegration(getInventoryByWarehouseFn)
         );
 
+        //Select the item by item id and warehouse id 
+        const inventoryByItem = inventoryByWarehouse.addResource("item").addResource("{itemId}"); 
+        inventoryByItem.addMethod(
+            "GET",
+            new apigateway.LambdaIntegration(getInventoryByItemFn)
+        );
+
+
         // Permission
         warehouseTable.grantReadData(getInventoryFn);
         warehouseTable.grantReadData(getInventoryByWarehouseFn);
-
+        warehouseTable.grantReadData(getInventoryByItemFn);
 
 
 
