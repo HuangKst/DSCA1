@@ -2,7 +2,7 @@
 
 __Name:__ Zihan Huang
 
-__Demo:__ YOUR YOUTUBE DEMO LINK HERE
+__Demo:__ [ YOUTUBE DEMO LINK ](https://youtu.be/n5D_dwdTVvY)
 
 ---
 
@@ -206,7 +206,6 @@ cdk destroy
 ### Extra
 
 - ✅ Multi-language support (client-driven)
-- ✅ JSON Schema validation using auto-generated schemas
 - ✅ Rate limiting with API Gateway usage plans
 - ✅ API secured via API Key
 - ✅ Fully reproducible infrastructure with AWS CDK
