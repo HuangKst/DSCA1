@@ -129,7 +129,22 @@ export class WarehouseAPIStack extends cdk.Stack {
             },
         });
 
-    
+        const updateInventoryItemFn = new lambdanode.NodejsFunction(this, "UpdateInventoryItemFn", {
+            runtime: lambda.Runtime.NODEJS_18_X,
+            entry: `${__dirname}/../lambdas/updateInventoryItem.ts`,
+            handler: "handler",
+            environment: {
+                TABLE_NAME: warehouseTable.tableName,
+                REGION: "eu-west-1",
+            },
+            bundling: {
+                forceDockerBundling: false,
+            },
+        });
+
+
+
+
 
 
 
@@ -160,16 +175,27 @@ export class WarehouseAPIStack extends cdk.Stack {
             "POST",
             new apigateway.LambdaIntegration(createInventoryItemFn),
             {
-              apiKeyRequired: true, 
+                apiKeyRequired: true,
             }
-          );
-          
-          
+        );
+
+        //Update the items
+        inventoryEndpoint.addMethod(
+            "PUT",
+            new apigateway.LambdaIntegration(updateInventoryItemFn),
+            {
+                apiKeyRequired: true,
+            }
+        );
+
+
+
         // Permission
         warehouseTable.grantReadData(getInventoryFn);
         warehouseTable.grantReadData(getInventoryByWarehouseFn);
         warehouseTable.grantReadData(getInventoryByItemFn);
         warehouseTable.grantWriteData(createInventoryItemFn);
+        warehouseTable.grantWriteData(updateInventoryItemFn);
 
 
 
