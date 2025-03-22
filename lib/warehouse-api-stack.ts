@@ -141,7 +141,18 @@ export class WarehouseAPIStack extends cdk.Stack {
                 forceDockerBundling: false,
             },
         });
-
+        const deleteInventoryItemFn = new lambdanode.NodejsFunction(this, "DeleteInventoryItemFn", {
+            runtime: lambda.Runtime.NODEJS_18_X,
+            entry: `${__dirname}/../lambdas/deleteInventoryItem.ts`,
+            handler: "handler",
+            environment: {
+              TABLE_NAME: warehouseTable.tableName,
+            },
+            bundling: { forceDockerBundling: false },
+          });
+          
+          
+          
 
 
 
@@ -187,8 +198,15 @@ export class WarehouseAPIStack extends cdk.Stack {
                 apiKeyRequired: true,
             }
         );
-
-
+        //Delete item 
+        inventoryByItem.addMethod(
+            "DELETE",
+            new apigateway.LambdaIntegration(deleteInventoryItemFn),
+            {
+                apiKeyRequired:true,
+            }
+          );
+          
 
         // Permission
         warehouseTable.grantReadData(getInventoryFn);
@@ -196,8 +214,7 @@ export class WarehouseAPIStack extends cdk.Stack {
         warehouseTable.grantReadData(getInventoryByItemFn);
         warehouseTable.grantWriteData(createInventoryItemFn);
         warehouseTable.grantWriteData(updateInventoryItemFn);
-
-
+        warehouseTable.grantWriteData(deleteInventoryItemFn);
 
 
 
